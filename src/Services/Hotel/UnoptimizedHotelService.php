@@ -7,8 +7,10 @@ use App\Common\SingletonTrait;
 use App\Entities\HotelEntity;
 use App\Entities\RoomEntity;
 use App\Services\Room\RoomService;
+use App\Common\Timers;
 use Exception;
 use PDO;
+
 
 /**
  * Une classe utilitaire pour récupérer les données des magasins stockés en base de données
@@ -31,9 +33,11 @@ class UnoptimizedHotelService extends AbstractHotelService {
    */
   protected function getDB () : PDO {
     $pdo = new PDO( "mysql:host=db;dbname=tp;charset=utf8mb4", "root", "root" );
+    
     return $pdo;
   }
   
+
   
   /**
    * Récupère une méta-donnée de l'instance donnée
@@ -43,19 +47,20 @@ class UnoptimizedHotelService extends AbstractHotelService {
    *
    * @return string|null
    */
-  protected function getMeta ( int $userId, string $key ) : ?string {
-    $db = $this->getDB();
-    $stmt = $db->prepare( "SELECT * FROM wp_usermeta" );
-    $stmt->execute();
-    
-    $result = $stmt->fetchAll( PDO::FETCH_ASSOC );
-    $output = null;
-    foreach ( $result as $row ) {
-      if ( $row['user_id'] === $userId && $row['meta_key'] === $key )
-        $output = $row['meta_value'];
-    }
-    
-    return $output;
+    protected function getMeta ( int $userId, string $key ) : ?string {
+      
+      
+      $db = $this->getDB();
+      $stmt = $db->prepare( "SELECT * FROM wp_usermeta" );
+      $stmt->execute();
+      
+      $result = $stmt->fetchAll( PDO::FETCH_ASSOC );
+      $output = null;
+      foreach ( $result as $row ) {
+        if ( $row['user_id'] === $userId && $row['meta_key'] === $key )
+          $output = $row['meta_value'];
+      }      
+      return $output;
   }
   
   
@@ -68,6 +73,8 @@ class UnoptimizedHotelService extends AbstractHotelService {
    * @noinspection PhpUnnecessaryLocalVariableInspection
    */
   protected function getMetas ( HotelEntity $hotel ) : array {
+    $timer = Timers::getInstance();
+    $timerId = $timer->startTimer('getMeta');
     $metaDatas = [
       'address' => [
         'address_1' => $this->getMeta( $hotel->getId(), 'address_1' ),
@@ -81,7 +88,8 @@ class UnoptimizedHotelService extends AbstractHotelService {
       'coverImage' =>  $this->getMeta( $hotel->getId(), 'coverImage' ),
       'phone' =>  $this->getMeta( $hotel->getId(), 'phone' ),
     ];
-    
+    $timer->getTimers();
+    $timer->endTimer('getMeta', $timerId);
     return $metaDatas;
   }
   
@@ -95,6 +103,10 @@ class UnoptimizedHotelService extends AbstractHotelService {
    * @noinspection PhpUnnecessaryLocalVariableInspection
    */
   protected function getReviews ( HotelEntity $hotel ) : array {
+    
+    $timer = Timers::getInstance();
+    $timerId = $timer->startTimer('getReviews');
+    header('Server-Timing: ' . Timers::getInstance()->getTimers() );
     // Récupère tous les avis d'un hotel
     $stmt = $this->getDB()->prepare( "SELECT * FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review'" );
     $stmt->execute( [ 'hotelId' => $hotel->getId() ] );
@@ -109,7 +121,8 @@ class UnoptimizedHotelService extends AbstractHotelService {
       'rating' => round( array_sum( $reviews ) / count( $reviews ) ),
       'count' => count( $reviews ),
     ];
-    
+    $timer->getTimers();
+    $timer->endTimer('getReviews', $timerId);
     return $output;
   }
   
@@ -134,6 +147,8 @@ class UnoptimizedHotelService extends AbstractHotelService {
    */
   protected function getCheapestRoom ( HotelEntity $hotel, array $args = [] ) : RoomEntity {
     // On charge toutes les chambres de l'hôtel
+    $timer = Timers::getInstance();
+    $timerId = $timer->startTimer('getCheapestRoom');
     $stmt = $this->getDB()->prepare( "SELECT * FROM wp_posts WHERE post_author = :hotelId AND post_type = 'room'" );
     $stmt->execute( [ 'hotelId' => $hotel->getId() ] );
     
@@ -143,6 +158,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
      * @var RoomEntity[] $rooms ;
      */
     $rooms = array_map( function ( $row ) {
+      
       return $this->getRoomService()->get( $row['ID'] );
     }, $stmt->fetchAll( PDO::FETCH_ASSOC ) );
     
@@ -172,6 +188,8 @@ class UnoptimizedHotelService extends AbstractHotelService {
         continue;
       
       $filteredRooms[] = $room;
+      $timer->getTimers();
+      $timer->endTimer('getCheapestRoom', $timerId);
     }
     
     // Si aucune chambre ne correspond aux critères, alors on déclenche une exception pour retirer l'hôtel des résultats finaux de la méthode list().

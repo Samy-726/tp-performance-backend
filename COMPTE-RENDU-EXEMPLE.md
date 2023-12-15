@@ -6,9 +6,9 @@ Vous pouvez utiliser ce [GSheets](https://docs.google.com/spreadsheets/d/13Hw27U
 
 **Choix des méthodes à analyser** :
 
-- `METHOD_1` TEMPS
-- `METHOD_2` TEMPS
-- `METHOD_3` TEMPS
+- `getCheapestRoom` 15.87s
+- `getMeta` 4.18s
+- `getReviews` 8.76s
 
 
 
