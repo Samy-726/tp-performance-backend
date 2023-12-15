@@ -6,21 +6,21 @@ Vous pouvez utiliser ce [GSheets](https://docs.google.com/spreadsheets/d/13Hw27U
 
 **Choix des méthodes à analyser** :
 
-- `getCheapestRoom` 15.87s
-- `getMeta` 4.18s
-- `getReviews` 8.76s
+- `getCheapestRoom` 15s.87s
+- `getMeta` 4s.18s
+- `getReviews` 8s.76s
 
 
 
 ## Question 3 : Réduction du nombre de connexions PDO
 
-**Temps de chargement de la page** : TEMPS
+**Temps de chargement de la page** : 29s.60s
 
 **Temps consommé par `getDB()`** 
 
-- **Avant** TEMPS
+- **Avant** 1.52ms
 
-- **Après** TEMPS
+- **Après** 194.91ms
 
 
 ## Question 4 : Délégation des opérations de filtrage à la base de données
