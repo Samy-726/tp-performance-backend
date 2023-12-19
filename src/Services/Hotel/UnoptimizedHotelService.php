@@ -51,51 +51,60 @@ class UnoptimizedHotelService extends AbstractHotelService {
    *
    * @return string|null
    */
-    protected function getMeta ( int $userId, string $key ) : ?string {
-      
-      
-      $db = $this->getDB();
-      $stmt = $db->prepare( "SELECT * FROM wp_usermeta" );
-      $stmt->execute();
-      
-      $result = $stmt->fetchAll( PDO::FETCH_ASSOC );
-      $output = null;
-      foreach ( $result as $row ) {
-        if ( $row['user_id'] === $userId && $row['meta_key'] === $key )
-          $output = $row['meta_value'];
-      }      
-      return $output;
-  }
-  
-  
-  /**
-   * Récupère toutes les meta données de l'instance donnée
-   *
-   * @param HotelEntity $hotel
-   *
-   * @return array
-   * @noinspection PhpUnnecessaryLocalVariableInspection
-   */
-  protected function getMetas ( HotelEntity $hotel ) : array {
+  protected function getMeta(int $userId, string $key): ?string {
     $timer = Timers::getInstance();
     $timerId = $timer->startTimer('getMeta');
-    $metaDatas = [
-      'address' => [
-        'address_1' => $this->getMeta( $hotel->getId(), 'address_1' ),
-        'address_2' => $this->getMeta( $hotel->getId(), 'address_2' ),
-        'address_city' => $this->getMeta( $hotel->getId(), 'address_city' ),
-        'address_zip' => $this->getMeta( $hotel->getId(), 'address_zip' ),
-        'address_country' => $this->getMeta( $hotel->getId(), 'address_country' ),
-      ],
-      'geo_lat' =>  $this->getMeta( $hotel->getId(), 'geo_lat' ),
-      'geo_lng' =>  $this->getMeta( $hotel->getId(), 'geo_lng' ),
-      'coverImage' =>  $this->getMeta( $hotel->getId(), 'coverImage' ),
-      'phone' =>  $this->getMeta( $hotel->getId(), 'phone' ),
-    ];
-    $timer->getTimers();
+ 
+    $db = $this->getDB();
+    $stmt = $db->prepare("SELECT meta_value FROM wp_usermeta WHERE user_id = :userId AND meta_key = :key");
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+    $stmt->bindParam(':key', $key, PDO::PARAM_STR);
+    $stmt->execute();
+ 
+    $output = $stmt->fetchColumn();
+ 
     $timer->endTimer('getMeta', $timerId);
-    return $metaDatas;
+ 
+    return $output !== false ? $output : null;
+}
+ 
+/**
+* Récupère toutes les meta données de l'instance donnée
+*
+* @param HotelEntity $hotel
+*
+* @return array
+*/
+protected function getMetas(HotelEntity $hotel): array {
+  $timer = Timers::getInstance();
+  $timerId = $timer->startTimer('getMetas');
+  $db = $this->getDB();
+  $stmt = $db->prepare("SELECT meta_key, meta_value FROM wp_usermeta WHERE user_id = :hotel_id");
+  $stmt->execute(["hotel_id" => $hotel->getId()]);
+  $result = $stmt->fetchAll(PDO::FETCH_NAMED);
+
+  $meta = [];
+  foreach($result as $row){
+    $meta[$row['meta_key']] = $row ['meta_value'];
   }
+
+  $metaDatas = [
+    'address' => [
+      'address_1' => $meta['address_1'],
+      'address_2' => $meta['address_2'],
+      'address_city' => $meta['address_city'],
+      'address_zip' => $meta['address_zip'],
+      'address_country' => $meta['address_country'],
+    ],
+    'geo_lat' =>  $meta['geo_lat'],
+    'geo_lng' =>  $meta['geo_lng'],
+    'coverImage' =>  $meta['coverImage'],
+    'phone' =>  $meta['phone'],
+  ];
+  $timer->getTimers();
+  $timer->endTimer('getMetas', $timerId);
+  return $metaDatas;
+}
   
   
   /**
