@@ -56,27 +56,53 @@ SELECT meta_key, meta_value FROM wp_usermeta WHERE user_id = :hotel_id
 SELECT * FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review'
 ```
 
-- **Après** TEMPS
+- **Après** 6.22
 
 ```sql
--- NOUVELLE REQ SQL
+SELECT AVG(CAST(wp_postmeta.meta_value AS SIGNED)) AS rating, COUNT(*) AS count
+        FROM wp_posts 
+        JOIN wp_postmeta ON wp_posts.ID = wp_postmeta.post_id
+        WHERE wp_posts.post_author = :hotelId
+          AND meta_key = 'rating'
+          AND post_type = 'review'
 ```
 
 
 
-#### Amélioration de la méthode `METHOD` :
+#### Amélioration de la méthode `getCheapestRoom` :
 
-- **Avant** TEMPS
-
-```sql
--- REQ SQL DE BASE
-```
-
-- **Après** TEMPS
+- **Avant** 15.78s
 
 ```sql
--- NOUVELLE REQ SQL
+SELECT * FROM wp_posts WHERE post_author = :hotelId AND post_type = 'room'
 ```
+
+- **Après** 11.40
+
+```sql
+SELECT post.ID,
+          post.post_title AS title,
+          MIN(CAST(PriceData.meta_value AS float)) AS price,
+          CAST(SurfaceData.meta_value AS int) AS surface,
+          TypeData.meta_value AS types,
+          CAST(BedroomsCountData.meta_value AS int) AS bedrooms,
+          CAST(BathroomsCountData.meta_value AS int) AS bathrooms,
+          CoverImageData.meta_value AS coverImage
+        
+          FROM tp.wp_posts AS post
+        
+          INNER JOIN tp.wp_postmeta AS SurfaceData
+            ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+          INNER JOIN tp.wp_postmeta AS PriceData
+            ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'     
+          INNER JOIN tp.wp_postmeta AS TypeData
+            ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+          INNER JOIN tp.wp_postmeta AS BedroomsCountData
+            ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+          INNER JOIN tp.wp_postmeta AS BathroomsCountData
+            ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'       
+          INNER JOIN tp.wp_postmeta AS CoverImageData
+            ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
 
 
 
