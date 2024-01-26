@@ -117,14 +117,118 @@ SELECT post.ID,
 
 |                              | **Avant** | **Après** |
 |------------------------------|-----------|-----------|
-| Nombre d'appels de `getDB()` | 32.21ms   | NOMBRE    |
-| Temps de chargement global   | 18.9s     | TEMPS     |
+| Nombre d'appels de `getDB()` | 599       | ..        |
+| Temps de chargement global   | 18.9s     | 2.02s     |
 
 **Requête SQL**
 
 ```SQL
--- GIGA REQUÊTE
--- INDENTATION PROPRE ET COMMENTAIRES SERONT APPRÉCIÉS MERCI !
+$query = "SELECT
+		user.ID AS id,
+	display_name AS name,
+	latData.meta_value AS lat,
+	lngData.meta_value AS lng,
+	mailData.meta_value AS mail,
+	phoneData.meta_value AS phone,
+	addr1Data.meta_value AS address_1,
+	addr2Data.meta_value AS address_2,
+	cityData.meta_value AS address_city,
+	zipData.meta_value AS address_zip,
+	countryData.meta_value AS address_country,
+	imageData.meta_value AS cover_image,
+	$selectDistanceKM
+	
+	review.count AS review_count,
+	review.rating AS review_rating,
+	
+	post.ID AS cheapestRoomId,
+	post.price AS price,
+	post.surface AS surface,
+	post.bedRoomsCount AS bed_rooms_count,
+	post.bathRoomsCount AS bath_rooms_count,
+	post.roomType AS type
+	
+FROM
+	wp_users AS USER
+	
+	-- geo coords
+	INNER JOIN tp.wp_usermeta AS latData ON latData.user_id = user.ID
+		AND latData.meta_key = 'geo_lat'
+	INNER JOIN tp.wp_usermeta AS lngData ON lngData.user_id = user.ID
+		AND lngData.meta_key = 'geo_lng'
+	-- email
+	INNER JOIN tp.wp_usermeta AS mailData ON mailData.user_id = user.ID
+		AND mailData.meta_key = 'email'
+	-- phone
+	INNER JOIN tp.wp_usermeta AS phoneData ON phoneData.user_id = user.ID
+		AND phoneData.meta_key = 'phone'
+	-- address_1
+	INNER JOIN tp.wp_usermeta AS addr1Data ON addr1Data.user_id = user.ID
+		AND addr1Data.meta_key = 'address_1'
+	-- address_2
+	INNER JOIN tp.wp_usermeta AS addr2Data ON addr2Data.user_id = user.ID
+		AND addr2Data.meta_key = 'address_2'
+	-- address_city
+	INNER JOIN tp.wp_usermeta AS cityData ON cityData.user_id = user.ID
+		AND cityData.meta_key = 'address_city'
+	-- address_zip
+	INNER JOIN tp.wp_usermeta AS zipData ON zipData.user_id = user.ID
+		AND zipData.meta_key = 'address_zip'
+	-- address_country
+	INNER JOIN tp.wp_usermeta AS countryData ON countryData.user_id = user.ID
+		AND countryData.meta_key = 'address_country'
+	-- image
+	INNER JOIN tp.wp_usermeta AS imageData ON imageData.user_id = user.ID
+		AND imageData.meta_key = 'coverImage'
+	
+	-- rating
+	INNER JOIN (
+	SELECT
+		post.post_author,
+		COUNT( CAST(meta.meta_value AS UNSIGNED) ) as count,
+		AVG( CAST(meta.meta_value AS UNSIGNED) ) as rating
+	FROM
+		tp.wp_posts as post
+		INNER JOIN tp.wp_postmeta as meta ON post.ID = meta.post_id
+	WHERE
+		post_type = 'review'
+	GROUP BY
+		post_author
+	) AS review ON user.ID = post_author
+	
+	-- room
+  INNER JOIN (
+		SELECT
+			post.ID,
+			post.post_title,
+			post.post_author,
+			MIN(CAST(priceData.meta_value AS UNSIGNED)) AS price,
+			CAST(surfaceData.meta_value AS UNSIGNED) as surface,
+			CAST(bedData.meta_value AS UNSIGNED) as bedRoomsCount,
+			CAST(bathData.meta_value AS UNSIGNED) as bathRoomsCount,
+			typeData.meta_value as roomType
+		FROM
+			tp.wp_posts AS post
+			-- price
+			INNER JOIN tp.wp_postmeta AS priceData ON post.ID = priceData.post_id
+				AND priceData.meta_key = 'price'
+			-- surface
+			INNER JOIN tp.wp_postmeta AS surfaceData ON surfaceData.post_id = post.ID
+				AND surfaceData.meta_key = 'surface'
+			-- bedrooms count
+			INNER JOIN tp.wp_postmeta AS bedData ON bedData.post_id = post.ID
+				AND bedData.meta_key = 'bedrooms_count'
+			-- bathrooms count
+			INNER JOIN tp.wp_postmeta AS bathData ON bathData.post_id = post.ID
+				AND bathData.meta_key = 'bathrooms_count'
+			-- room type
+			INNER JOIN tp.wp_postmeta AS typeData ON typeData.post_id = post.ID
+				AND typeData.meta_key = 'type'
+		WHERE
+			post_type = 'room'
+		GROUP BY
+			post.ID) AS post ON user.ID = post.post_author
+";
 ```
 
 ## Question 7 : ajout d'indexes SQL
