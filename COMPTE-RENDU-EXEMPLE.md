@@ -29,7 +29,7 @@ Vous pouvez utiliser ce [GSheets](https://docs.google.com/spreadsheets/d/13Hw27U
 
 - **Avant** 14.67s
 
-- **Après** TEMPS
+- **Après** 11.23s
 
 
 #### Amélioration de la méthode `getMeta` et donc de la méthode `getMetas` :
@@ -106,19 +106,19 @@ SELECT post.ID,
 
 
 
-## Question 5 : Réduction du nombre de requêtes SQL pour `METHOD`
+## Question 5 : Réduction du nombre de requêtes SQL pour `getMetas`
 
 |                              | **Avant** | **Après** |
 |------------------------------|-----------|-----------|
-| Nombre d'appels de `getDB()` | NOMBRE    | NOMBRE    |
- | Temps de `METHOD`            | TEMPS     | TEMPS     |
+| Nombre d'appels de `getDB()` | 599       | 599       |
+| Temps de `getMetas`          | 188ms     | 186ms     |
 
 ## Question 6 : Création d'un service basé sur une seule requête SQL
 
 |                              | **Avant** | **Après** |
 |------------------------------|-----------|-----------|
-| Nombre d'appels de `getDB()` | NOMBRE    | NOMBRE    |
-| Temps de chargement global   | TEMPS     | TEMPS     |
+| Nombre d'appels de `getDB()` | 32.21ms   | NOMBRE    |
+| Temps de chargement global   | 18.9s     | TEMPS     |
 
 **Requête SQL**
 

@@ -40,33 +40,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
     $timer->endTimer('getDB', $timerId);
     return $pdo;
   }
-  
 
-  
-  /**
-   * Récupère une méta-donnée de l'instance donnée
-   *
-   * @param int    $userId
-   * @param string $key
-   *
-   * @return string|null
-   */
-  protected function getMeta(int $userId, string $key): ?string {
-    $timer = Timers::getInstance();
-    $timerId = $timer->startTimer('getMeta');
- 
-    $db = $this->getDB();
-    $stmt = $db->prepare("SELECT meta_value FROM wp_usermeta WHERE user_id = :userId AND meta_key = :key");
-    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-    $stmt->bindParam(':key', $key, PDO::PARAM_STR);
-    $stmt->execute();
- 
-    $output = $stmt->fetchColumn();
- 
-    $timer->endTimer('getMeta', $timerId);
- 
-    return $output !== false ? $output : null;
-}
  
 /**
 * Récupère toutes les meta données de l'instance donnée
@@ -78,31 +52,33 @@ class UnoptimizedHotelService extends AbstractHotelService {
 protected function getMetas(HotelEntity $hotel): array {
   $timer = Timers::getInstance();
   $timerId = $timer->startTimer('getMetas');
-  $db = $this->getDB();
-  $stmt = $db->prepare("SELECT meta_key, meta_value FROM wp_usermeta WHERE user_id = :hotel_id");
-  $stmt->execute(["hotel_id" => $hotel->getId()]);
-  $result = $stmt->fetchAll(PDO::FETCH_NAMED);
 
-  $meta = [];
-  foreach($result as $row){
-    $meta[$row['meta_key']] = $row ['meta_value'];
+  $db = $this->getDB();
+  $hotelId = $hotel->getId();
+  $stmt = $db->prepare("SELECT meta_key, meta_value FROM wp_usermeta WHERE user_id = :hotel_id");
+  $stmt->execute(['hotel_id' => $hotelId]);
+
+  $metas = [];
+  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+      $metas[$row['meta_key']] = $row['meta_value'];
   }
 
   $metaDatas = [
-    'address' => [
-      'address_1' => $meta['address_1'],
-      'address_2' => $meta['address_2'],
-      'address_city' => $meta['address_city'],
-      'address_zip' => $meta['address_zip'],
-      'address_country' => $meta['address_country'],
-    ],
-    'geo_lat' =>  $meta['geo_lat'],
-    'geo_lng' =>  $meta['geo_lng'],
-    'coverImage' =>  $meta['coverImage'],
-    'phone' =>  $meta['phone'],
+      'address' => [
+          'address_1' => $metas['address_1'] ?? null,
+          'address_2' => $metas['address_2'] ?? null,
+          'address_city' => $metas['address_city'] ?? null,
+          'address_zip' => $metas['address_zip'] ?? null,
+          'address_country' => $metas['address_country'] ?? null,
+      ],
+      'geo_lat' => $metas['geo_lat'] ?? null,
+      'geo_lng' => $metas['geo_lng'] ?? null,
+      'coverImage' => $metas['coverImage'] ?? null,
+      'phone' => $metas['phone'] ?? null,
   ];
-  $timer->getTimers();
+
   $timer->endTimer('getMetas', $timerId);
+
   return $metaDatas;
 }
   
